@@ -9,31 +9,43 @@ const token = require('./secrets.json').DropBoxToken;
 const dbx = new Dropbox({ accessToken: token });
 
 
-const decoder = lame.Decoder();
-
-const speaker = new Speaker({
-  channels: 1,
-  bitDepth: 16,
-  sampleRate: 44100
-})
-
-
-function speak(text) {
-  googleTTS(text, 'de')
-    .then(function (url) {
-      request.get(url)
-      .pipe(decoder)
-      .on("format", function (format) {
-        this.pipe(new Speaker(format))
-      })
-    })
-    .catch(function (e) {
-      console.error(e);
+function light(isOn, text) {
+  return new Promise(function(resolve, reject) {
+    if (isOn) {
+      console.log('ON: ' + text);
     }
-  );
+    setTimeout(function() {
+      if (!isOn) {
+        console.log('OFF: ' + text);
+      }
+      console.log('OK');
+      resolve();
+    }, 2000); 
+  });
 }
 
-
+function speak(text) {
+   return light(true, text)
+    .then(() => new Promise((resolve, reject) => {
+      googleTTS(text, 'de')
+        .then(function (url) {
+          request.get(url)
+          .pipe(lame.Decoder())
+          .on("format", function (format) {            
+            const speaker = new Speaker(format);
+            speaker.on('finish', () => {
+              resolve();
+            });
+            this.pipe(speaker)
+          })
+        })
+        .catch(function (e) {
+          console.error(e);
+          reject();
+        })
+      }))
+    .then(() => light(false, text));
+}
 
 //
 // TODO: cleanup job for old files
@@ -42,14 +54,14 @@ function speak(text) {
 
 dbx.filesListFolder({ path: '/IFTTT' })
   .then(function(response) {
+    let p = Promise.resolve();
     response.entries.forEach(e => {
       //console.log(e);
       let arg = { path : e.path_lower };
       dbx.filesDownload(arg).then(f => {
         //console.log(f.fileBinary);
-        speak(f.fileBinary);
-
-        dbx.filesDelete(arg);
+        p = p.then(() => speak(f.fileBinary));
+        //dbx.filesDelete(arg);
       })
       .catch(function(error) {
         console.log(error);
@@ -59,3 +71,4 @@ dbx.filesListFolder({ path: '/IFTTT' })
   .catch(function(error) {
     console.log(error);
   });
+  
