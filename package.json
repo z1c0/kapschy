@@ -1,0 +1,18 @@
+{
+  "name": "kapschy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "wziegler@live.at",
+  "license": "MIT",
+  "dependencies": {
+    "dropbox": "^2.5.5",
+    "google-tts-api": "0.0.1",
+    "lame": "^1.2.4",
+    "request": "^2.81.0",
+    "speaker": "^0.3.0"
+  }
+}
